@@ -1,0 +1,7 @@
+datasets
+pandas
+cassandra
+diffusers
+gradio
+transformers>=4.43.0
+huggingface_hub

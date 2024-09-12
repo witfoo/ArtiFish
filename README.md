@@ -15,14 +15,14 @@ The code in this repo are divided into 3 sub-folders: `dataset-generation`, `fin
 The files in the `dataset-creation` folder were used to create public facing and private datasts used by WitFoo R&D
 - `precinct-to-syslog-dataset.py` - Connects to a WitFoo Precinct Cassandra cluster, analyzes Incidents and Artifacts to create a dataset for training how to translate syslog formats to English.
 - `syslog-to-parser-code.py` - Used to take input syslog messages and code examples to create parsers for training a codegen model.
-Public datasets can be found on WitFoo's Huggingface page at https://huggingface.co/witfoo.
+- Public datasets can be found on WitFoo's Huggingface page at https://huggingface.co/witfoo.
 
 ## fine-tuning
 The files in the `fine-tuning` folder are used to train a model to understand a dataset
 - `unsloth-llama3-fine-tune-from-CSV.py` - Fine tuning script that loads a local model and CSV file and writes a newly tuned model.
 - `unsloth-llama3-fine-tune-from-dataset.py` - Fine tuning script that loads a local or HF model and HF Dataset and writes a newly tuned model.
 - `download-model.py` - Download a Huggingface model to local disk.
-Public fine tuned models that used this script can be found on WitFoo's Huggingface page at https://huggingface.co/witfoo.
+- Public fine tuned models that used this script can be found on WitFoo's Huggingface page at https://huggingface.co/witfoo.
 
 ## chatbots
 The files in the `chatbots` folder create Web User Interfaces to interact with models.
@@ -32,4 +32,4 @@ The files in the `chatbots` folder create Web User Interfaces to interact with m
 - `local-model-transformers-chatbot.py` - Chatbot for interacting with a local, fine-tuned model with standard Transformers. Can run on GPU or CPU.
 - `witq-unsloth-chatbot.py` - Chatbot for interacting with WitFoo's Opensource model with Unsloth optimizations. Can run on small GPU (CPU not supported)
 - `witq-transformers-chatbot.py` - Chatbot for interacting with WitFoo's Opensource model with standard Transformers. Can run on GPU or CPU.
-Public fine tuned models that used this script can be found on WitFoo's Huggingface page at https://huggingface.co/witfoo.
+- Public fine tuned models that used this script can be found on WitFoo's Huggingface page at https://huggingface.co/witfoo.

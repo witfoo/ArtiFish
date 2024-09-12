@@ -1,6 +1,5 @@
 # ArtiFish
-Toolkit for genai in cybersecurity. Details, resources and discussion can be found at https://www.charlesherring.com/ArtiFish
-
+Toolkit for genai in cybersecurity. Details, resources and discussion can be found at https://ArtiFish.dev
 # Installation
 - Install CUDA Toolkit 12.4: https://developer.nvidia.com/cuda-12-4-0-download-archive
 - Install Unsloth toolkit: https://github.com/unslothai/unsloth

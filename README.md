@@ -5,7 +5,7 @@ Toolkit for genai in cybersecurity. Details, resources and discussion can be fou
 - Install CUDA Toolkit 12.4: https://developer.nvidia.com/cuda-12-4-0-download-archive
 - Install Unsloth toolkit: https://github.com/unslothai/unsloth
 - Install PyTorch https://pytorch.org/get-started/locally
-- Install `pip -r requirements.txt`
+- Install `pip install -r requirements.txt`
 - Configure and run the appropriate script
 
 # Scripts

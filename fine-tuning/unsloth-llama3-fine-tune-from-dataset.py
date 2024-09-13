@@ -68,7 +68,7 @@ pass
 
 
 # Load the CSV file
-data = pd.read_csv(dataset_csv)
+data = pd.read_csv(dataset_id)
 # Prepare the dataset
 train_data = [
     {"input_text": row["input_text"], "output_text": row["output_text"], "instruction": row["instruction"]}

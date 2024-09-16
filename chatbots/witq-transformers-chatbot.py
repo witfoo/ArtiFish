@@ -5,15 +5,29 @@ import gradio as gr
 
 model_id = "witfoo/witq-1.0"
 dtype = torch.float16 # float16 for Tesla T4, V100, bfloat16 for Ampere+ 
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    torch_dtype=dtype,
-    device_map="auto",
-)
 # Use GPU if available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
+device = torch.device("cuda" if torch.cuda.is_available() else "auto")
+
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+try:
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        torch_dtype=dtype,
+        device_map=device,
+    )
+except Exception as e:
+    if device == "cuda":
+        print("Failed to load model on GPU. Loading on CPU..." + str(e))
+        device = "auto"
+    else:
+        print("Failed to load model on CPU. Exiting..." + str(e))
+        exit(1)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        torch_dtype=dtype,
+        device_map=device,
+    )
+
 
 preamble = "Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request."
 

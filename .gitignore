@@ -1,3 +1,10 @@
+# .env file
+#  This file contains sensitive information such as API keys, database credentials, etc.
+#  It should not be shared with others or included in version control.
+#  Instead, use a .env.example file to provide a template for others to create their own .env file.
+.env
+# Ignore unsloth_compiled_cache directory
+unsloth_compiled_cache
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -1,7 +1,21 @@
 datasets
 pandas
-cassandra
 diffusers
 gradio
 transformers>=4.43.0
 huggingface_hub
+unsloth
+dotenv
+# Web scraping
+google-search-results
+## LangChain
+langchain
+langchain-community
+unstructured
+unstructured[local-inference]
+unstructured[all-docs]
+# Embeddings
+pypandoc
+nltk
+# Database
+chromadb==0.4.23

@@ -3,6 +3,7 @@
 #  It should not be shared with others or included in version control.
 #  Instead, use a .env.example file to provide a template for others to create their own .env file.
 .env
+settings.yaml
 # Ignore unsloth_compiled_cache directory
 unsloth_compiled_cache
 # Byte-compiled / optimized / DLL files

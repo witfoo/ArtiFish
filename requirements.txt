@@ -9,13 +9,20 @@ dotenv
 # Web scraping
 google-search-results
 ## LangChain
-langchain
 langchain-community
+langchain-huggingface
+langchain-chroma
 unstructured
 unstructured[local-inference]
 unstructured[all-docs]
 # Embeddings
 pypandoc
 nltk
+python-magic-bin
 # Database
-chromadb==0.4.23
+chromadb
+# PyTorch
+torch
+torchvision
+torchaudio
+--extra-index-url https://download.pytorch.org/whl/cu124

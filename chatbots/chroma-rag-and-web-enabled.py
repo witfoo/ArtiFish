@@ -7,15 +7,17 @@ from serpapi import GoogleSearch  # Import SERPAPI library
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
+from chromadb.config import Settings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import yaml
+
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
 import os
 load_dotenv()
 
-debug_enabled = False # Set to True to enable debug messages
+debug_enabled = True # Set to True to enable debug messages
 
 # Load settings from settings.yaml
 with open("settings.yaml", "r") as file:
@@ -133,27 +135,28 @@ trained_instructions = [
     "Identify this syslog message",
     "Explain this syslog message",
 ]
-# Load the ChromaDB vectorstore
-# Initialize the ChromaDB vectorstore with the specified path
-if debug_enabled: print(f"Loading ChromaDB from: {chroma_db_path}...")
-vectorstore = Chroma(persist_directory=chroma_db_path, embedding_function=HuggingFaceEmbeddings())
+
+# Load the ChromaDB vectorstore from a server
+if debug_enabled: print(f"Connecting to ChromaDB server at localhost:8000...")
+embeddings = HuggingFaceEmbeddings()
+vectorstore = Chroma(persist_directory=chroma_db_path, embedding_function=embeddings)
+
 # Update the generate_response function to include vector-based retrieval
 def generate_response_with_vectors(instruction, input_text):
     global vectorstore
-    #Initialize an array called retrieved_docs to store the retrieved documents
     retrieved_docs_location = []
-    # Load the ChromaDB vectorstore
     if debug_enabled: print(f"Checking ChromaDB for vectors from: {chroma_db_path}...")
 
-    # Get documents with scores
     docs_and_scores = vectorstore.similarity_search_with_score(input_text, k=25)
-    
-    # Filter by score threshold manually (lower is better)
-    score_threshold = 1.2
+    score_threshold = 0.5 # Adjust this threshold based on your needs
     lowest_score = 10.0
     filtered_docs = []
-    # Print the documents and their scores
     for doc, score in docs_and_scores:
+        if len(filtered_docs) >= 5:
+            break
+        retrieved_texts = "\n\n".join([doc.page_content for doc in filtered_docs])
+        if len(retrieved_texts) >= 7000:
+            break
         filename = doc.metadata.get("source", "Unknown")
         if score < lowest_score:
             lowest_score = score
@@ -163,9 +166,16 @@ def generate_response_with_vectors(instruction, input_text):
             if debug_enabled: print(f"Document: {filename}, Score: {score} (passed)")
         else:
             if debug_enabled: print(f"Document: {filename}, Score: {score} (filtered out)")
-        
+
     retrieved_texts = "\n\n".join([doc.page_content for doc in filtered_docs])
-    
+
+
+    # Truncate the retrieved texts to fit within the model's sequence length
+    max_context_length = 8192  # Adjust based on your model's max_seq_length
+    if len(retrieved_texts) > max_context_length:
+        retrieved_texts = retrieved_texts[:max_context_length]
+        if debug_enabled: print(f"Truncated retrieved texts to {max_context_length} characters.")
+
     # Establish the search case.
     certainty = 0
     if lowest_score < score_threshold:
@@ -176,27 +186,28 @@ def generate_response_with_vectors(instruction, input_text):
     
     used_docs = len(filtered_docs)
     if debug_enabled: print(f"Found {used_docs} relevant vectors in ChromaDB with a lowest score of {lowest_score}.")
-    if certainty < 1.0:
-        if debug_enabled: print("Low confidence in relevant vectors found in ChromaDB. Using SERPAPI to enhance response.")
-        # Perform SERPAPI lookup for the input text
-        serpapi_results = serpapi_lookup(input_text)
-        text_results = []
-        for serpapi_result in serpapi_results:
-            # Add the SERPAPI reference locations to the retrieved_docs_location list
-            url = serpapi_result.get("link", "No link available.")
-            retrieved_docs_location.append(url)
-            # Add the SERPAPI snippet to the text_results list
-            text_results.append(serpapi_result.get("snippet", "No snippet available."))
-        if debug_enabled: print(f"SERPAPI lookup returned {len(text_results)} results.")
-        # Join the SERPAPI snippets into a single string
-        serpapi_result = "\n\n".join(text_results)
-        # Add the SERPAPI result to the retrieved texts
-        retrieved_texts = f"{serpapi_result}\n\n{retrieved_texts}"
-        # Use the snippet in the combined input
-        combined_input = f"{input_text}\n\nSERPAPI Result: {retrieved_texts}\n\nRetrieved Context:\n{retrieved_texts}"
-    else:
-        print("Relevant vectors found in ChromaDB. Skipping SERPAPI lookup.")
-        combined_input = f"{input_text}\n\nRetrieved Context:\n{retrieved_texts}"
+    if debug_enabled: print("Using SERPAPI to enhance response.")
+    # Perform SERPAPI lookup for the input text
+    serpapi_results = serpapi_lookup(input_text)
+    if debug_enabled: print(f"SERPAPI lookup returned {len(serpapi_results)} results.")
+    text_results = []
+    total_records = len(filtered_docs)
+    for serpapi_result in serpapi_results:
+        # Add the SERPAPI reference locations to the retrieved_docs_location list
+        url = serpapi_result.get("link", "No link available.")
+        retrieved_docs_location.append(url)
+        # Add the SERPAPI snippet to the text_results list
+        text_results.append(serpapi_result.get("snippet", "No snippet available."))
+        total_records += 1
+        if total_records >= 6:
+            break
+    if debug_enabled: print(f"SERPAPI lookup returned {len(text_results)} results.")
+    # Join the SERPAPI snippets into a single string
+    serpapi_result = "\n\n".join(text_results)
+    # Add the SERPAPI result to the retrieved texts
+    serp_texts = f"{serpapi_result}\n\n{retrieved_texts}"
+    # Use the snippet in the combined input
+    combined_input = f"{input_text}\n\nSERPAPI Result: {serp_texts}\n\nRetrieved Context:\n{retrieved_texts}"
 
     # Include SERPAPI result and retrieved texts in the prompt
     instruction_preamble = "You are a helpful assistant. Use the following context to answer the question. "
@@ -220,6 +231,23 @@ def generate_response_with_vectors(instruction, input_text):
     return response, retrieved_docs_location
 
 
+
+    combined_input = f"{input_text}\n\nRetrieved Context:\n{retrieved_texts}"
+
+    instruction_preamble = "You are a helpful assistant. Use the following context to answer the question. "
+    instruction_preamble += "Retrieved Context is to be weighted more than SERPAPI Result. "
+    instruction = f"{instruction_preamble}\n\n{instruction}"
+    inputs = input_tokens(instruction, combined_input)
+    outputs = model.generate(**inputs, max_new_tokens=generation_tokens, use_cache=True)
+    response = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+
+    response = response.split("### Response:")[1].strip()
+    retrieved_docs_location = list(set(retrieved_docs_location))
+    retrieved_docs_location_formatted = [f"- {doc}" for doc in retrieved_docs_location]
+    retrieved_docs_location = "\n".join(retrieved_docs_location_formatted)
+    return response, retrieved_docs_location
+
+
 iface = gr.Interface(
     fn=chatbot,
     inputs=[
@@ -233,6 +261,8 @@ iface = gr.Interface(
     title="Chatbot"
 )
 
+# Clear CUDA cache before launching the app
+torch.cuda.empty_cache()
 
 app = gr.Blocks()
 

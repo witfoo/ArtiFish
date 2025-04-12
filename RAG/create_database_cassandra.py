@@ -120,7 +120,7 @@ def initialize_hash_db():
             hash TEXT PRIMARY KEY,
             file_path TEXT,
             timestamp TEXT
-        )
+        ) 
     """)
     conn.commit()
     conn.close()
@@ -266,6 +266,32 @@ def scan_and_store_vectors(data_dir, cassandra_contact_points, cassandra_keyspac
     session = cluster.connect()
     # Create the keyspace if it doesn't exist
     session.execute(f"CREATE KEYSPACE IF NOT EXISTS {cassandra_keyspace} WITH REPLICATION = {{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }};")
+    session.execute("""CREATE TABLE IF NOT EXISTS vectors.documents (
+        row_id text PRIMARY KEY,
+        attributes_blob text,
+        body_blob text,
+        vector vector<float, 768>,
+        metadata_s map<text, text>
+        ) WITH additional_write_policy = '99p'
+        AND allow_auto_snapshot = true
+        AND bloom_filter_fp_chance = 0.01
+        AND caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'}
+        AND cdc = false
+        AND comment = ''
+        AND compaction = {'class': 'org.apache.cassandra.db.compaction.UnifiedCompactionStrategy', 'scaling_parameters': 'T8, T4, N, L4'}
+        AND compression = {'chunk_length_in_kb': '16', 'class': 'org.apache.cassandra.io.compress.LZ4Compressor'}
+        AND memtable = 'default'
+        AND crc_check_chance = 1.0
+        AND default_time_to_live = 0
+        AND extensions = {}
+        AND gc_grace_seconds = 864000
+        AND incremental_backups = true
+        AND max_index_interval = 2048
+        AND memtable_flush_period_in_ms = 0
+        AND min_index_interval = 128
+        AND read_repair = 'BLOCKING'
+        AND speculative_retry = '99p';
+    """)
     cassio.init(session=session, keyspace=cassandra_keyspace)
     vectorstore = Cassandra(embedding=embeddings, session=session, keyspace=cassandra_keyspace, table_name="documents")
     print("Cassandra vectorstore initialized.")

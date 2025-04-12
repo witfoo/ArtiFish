@@ -10,7 +10,8 @@ from langchain_community.vectorstores import Cassandra
 from cassandra.cluster import Cluster
 import cassio
 
-MAX_DOCUMENTS_TO_FIND = 8
+MAX_DOCUMENTS_TO_FIND = 6
+MINIMUM_SCORE = 0.85
 
 debug_enabled = True # Set to True to enable debug messages
 
@@ -152,7 +153,7 @@ def generate_response_with_vectors(instruction, input_text):
     # Filter out documents with similarity scores below 0.9
     similar_docs = []
     for doc, score in docs_with_similarity:
-        if score < 0.8:
+        if score < MINIMUM_SCORE:
             if debug_enabled: print(f"Document: {doc.metadata.get('source', 'Unknown')} (skipped) with score: {score}")
             continue
         # Add the document to the similar_docs list if it has a good score
@@ -193,8 +194,8 @@ def generate_response_with_vectors(instruction, input_text):
     serpapi_results = serpapi_lookup(input_text)
     if debug_enabled: print(f"SERPAPI lookup returned {len(serpapi_results)} possible results.")
     text_results = []
-    total_records = 0
-    max_serpapi_results = 3
+    total_records = len(filtered_docs)
+    max_serpapi_results = MAX_DOCUMENTS_TO_FIND - 3
     for serpapi_result in serpapi_results:
         # Add the SERPAPI reference locations to the retrieved_docs_location list
         url = serpapi_result.get("link", "No link available.")
@@ -212,6 +213,8 @@ def generate_response_with_vectors(instruction, input_text):
     # Use the snippet in the combined input
     combined_input = f"{input_text}\n\nSERPAPI Result: {serp_texts}\n\nRetrieved Context:\n{retrieved_texts}"
 
+    # Clear CUDA cache to free up memory
+    torch.cuda.empty_cache()
     # Include SERPAPI result and retrieved texts in the prompt
     instruction_preamble = "You are a helpful assistant. Use the following context to answer the question. "
     instruction_preamble += "Retrieved Context is to be weighted more than SERPAPI Result. "
@@ -230,23 +233,6 @@ def generate_response_with_vectors(instruction, input_text):
         retrieved_docs_location_formatted.append(f"- {doc}")
 
     # Join the formatted links
-    retrieved_docs_location = "\n".join(retrieved_docs_location_formatted)
-    return response, retrieved_docs_location
-
-
-
-    combined_input = f"{input_text}\n\nRetrieved Context:\n{retrieved_texts}"
-
-    instruction_preamble = "You are a helpful assistant. Use the following context to answer the question. "
-    instruction_preamble += "Retrieved Context is to be weighted more than SERPAPI Result. "
-    instruction = f"{instruction_preamble}\n\n{instruction}"
-    inputs = input_tokens(instruction, combined_input)
-    outputs = model.generate(**inputs, max_new_tokens=generation_tokens, use_cache=True)
-    response = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
-
-    response = response.split("### Response:")[1].strip()
-    retrieved_docs_location = list(set(retrieved_docs_location))
-    retrieved_docs_location_formatted = [f"- {doc}" for doc in retrieved_docs_location]
     retrieved_docs_location = "\n".join(retrieved_docs_location_formatted)
     return response, retrieved_docs_location
 

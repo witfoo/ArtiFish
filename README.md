@@ -83,7 +83,7 @@ The files in the `chatbots` folder create Web User Interfaces to interact with m
 - `local-model-transformers-chatbot.py` - Chatbot for interacting with a local, fine-tuned model with standard Transformers. Can run on GPU or CPU.
 - `witq-unsloth-chatbot.py` - Chatbot for interacting with WitFoo's Opensource model with Unsloth optimizations. Can run on small GPU (CPU not supported)
 - `witq-transformers-chatbot.py` - Chatbot for interacting with WitFoo's Opensource model with standard Transformers. Can run on GPU or CPU.
-- Public fine tuned models that used this script can be found on WitFoo's Huggingface page at https://huggingface.co/witfoo.
+
 
 ## RAG
 The files in the `RAG` folder are used to make local documents searchable by the model using Retrieval Augmented Generation (RAG). 

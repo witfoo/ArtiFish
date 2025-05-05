@@ -1,7 +1,37 @@
 datasets
 pandas
-cassandra
 diffusers
 gradio
 transformers>=4.43.0
 huggingface_hub
+unsloth
+# Web scraping
+google-search-results
+## LangChain
+langchain-community
+langchain-huggingface
+langchain-chroma
+langchain_unstructured
+unstructured
+unstructured[local-inference]
+unstructured[all-docs]
+# Embeddings
+pypandoc
+nltk
+python-magic-bin
+EbookLib
+#OCR Detection
+python-doctr
+weasyprint
+imutils
+opencv-python-headless
+# PDF Extraction
+pymupdf
+# Database
+chromadb
+cassio
+# PyTorch
+torch
+torchvision
+torchaudio
+--extra-index-url https://download.pytorch.org/whl/cu124
